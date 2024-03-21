@@ -55,7 +55,7 @@ response = "Jumlah karakter dalam pesan tersebut: " + str(len(pesan))
 ```
 
 <p style="text-align:justify;">
-Respon yang telah disiapkan, disandikan dengan metode encode() kemudian dikirim kebclient. Setelah itu, socket client ditutup dilanjut penutupan socket server untuk mengakhiri koneksi.
+Respon yang telah disiapkan, disandikan dengan metode encode() kemudian dikirim ke client. Setelah itu, socket client ditutup dan dilanjut penutupan socket server untuk mengakhiri koneksi.
 </p>
 
 ```python
