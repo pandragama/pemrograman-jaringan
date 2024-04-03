@@ -283,7 +283,7 @@ elif action == 'connme':
 > **CATATAN:** String literal biner,  ditandai dengan awalan b sebelum tanda kutip. String ini diubah menjadi bytes, yang merupakan format yang diperlukan oleh metode .send() untuk mengirim data melalui jaringan. Ini dapat menjadi alternatif dalam konteks mengubah sebuah nilai menjadi byte selain metode .encode().
 
 <p style="text-align:justify;">
-Dengan demikian, program server sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="#" target="_blank">server.py</a> yang tersedia dalam repositori ini.
+Dengan demikian, program server sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2006%20-%2028%20Maret%202024%20-%20Teori/server.py" target="_blank">server.py</a> yang tersedia dalam repositori ini.
 </p>
 
 <br>
@@ -442,7 +442,7 @@ if conn:
 ```
 
 <p style="text-align:justify;">
-Dengan demikian, program client sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="#" target="_blank">client.py</a> yang tersedia dalam repositori ini.
+Dengan demikian, program client sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2006%20-%2028%20Maret%202024%20-%20Teori/client.py" target="_blank">client.py</a> yang tersedia dalam repositori ini.
 </p>
 
 <br>
