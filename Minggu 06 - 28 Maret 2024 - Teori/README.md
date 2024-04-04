@@ -474,3 +474,7 @@ Berdasarkan preview output di atas, diketahui bahwa client mampu terhubung denga
 | size {nama file} | Ketika client menginputkan command tersebut, maka server akan memberikan informasi file dalam satuan MB (Mega bytes) dengan acuan nama file yang diberikan pada parameter pertama. |
 | byebye | Ketika client menginputkan command tersebut, maka hubungan socket client akan diputus. |
 | connme | Ketika client menginputkan command tersebut, maka hubungan socket client akan terhubung. |
+
+<br>
+
+> Pandu Rafa Panatagama - 1203220063 - IF0201
