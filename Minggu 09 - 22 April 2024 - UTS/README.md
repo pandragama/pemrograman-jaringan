@@ -1,6 +1,6 @@
 # UTS - Permainan One-to-Many Menggunakan Socket UDP
 
-Permaianan ini melibatkan server dan satu atau lebih client. Permainan ini memiliki peraturan, aturan mainnya meilputi:
+Ini adalah permainan tentang menerjemahkan warna dari bahasa inggris ke bahasa indoneisa yang melibatkan server dan satu atau lebih client. Permainan ini memiliki beberapa peraturan, meliputi:
 - Terjamahkan nama warna dalam 5 detik.
 - 5 detik setelahnya akan masuk babak berikutnya.
 - Setiap babak berhadiah 100 poin.
