@@ -193,7 +193,7 @@ def checkAnswer(clientData, answer):
     
 ```
 
-Penjelasan di atas berurutan sesuai proses permainan, namun tidak urut sesuai kode program aslinya. Keseluruhan kode server dapat dilihat di dalam dokumen <a href="#" target="_blank">server.py</a> yang tersedia dalam repositori ini.
+Penjelasan di atas berurutan sesuai proses permainan, namun tidak urut sesuai kode program aslinya. Keseluruhan kode server dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2009%20-%2022%20April%202024%20-%20UTS/server.py" target="_blank">server.py</a> yang tersedia dalam repositori ini.
 
 <br>
 
@@ -334,7 +334,7 @@ while True:
       deadline[0] = True
 ```
 
-Penjelasan di atas berurutan sesuai proses permainan, namun tidak urut sesuai kode program aslinya. Keseluruhan kode client dapat dilihat di dalam dokumen <a href="#" target="_blank">client.py</a> yang tersedia dalam repositori ini.
+Penjelasan di atas berurutan sesuai proses permainan, namun tidak urut sesuai kode program aslinya. Keseluruhan kode client dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2009%20-%2022%20April%202024%20-%20UTS/client.py" target="_blank">client.py</a> yang tersedia dalam repositori ini.
 
 <br>
 
