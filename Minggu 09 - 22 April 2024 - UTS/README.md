@@ -341,8 +341,19 @@ Penjelasan di atas berurutan sesuai proses permainan, namun tidak urut sesuai ko
 ## Preview
 
 Berikut adalah bagaimana tiga client dalam tiga kondisi "keluar permainan" yang berbeda. 
-![server_preview](preview-01.png)
+
+<br>
+
+![preview-kondisi-keluar](preview-01.png)
+
+<br>
+
 Bagian paling kiri adalah server. Di sebelah kanan, pertama ada client yang terlambat mengirim jawaban. Kedua, ada client yang salah menjawab pertanyaan. Dan yang paling kanan, atau ketiga ada client yang menyerah dengan mengirimkan pesan "!q". 
 
-![client_preview](preview-02.png)
+<br>
+
+![preview-10-client](preview-02.png)
+
+<br>
+
 Gambar di atas adalah kondisi bagaimana jadinya bila terdapat sepuluh client yang terhubung dengan server dan setiap client memainkan permainannya.
