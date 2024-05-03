@@ -24,15 +24,18 @@ while True:
     # Menerima input pengguna
     command = input(f"Masukkan perintah [{'Client-Server'if conn else'Client'}] > ")
     
+    split_command = command.split()
+    
     # Jika koneksi dengan server sudah terjalin
     if conn:
       # Mengirim pesan berupa perintah ke server
       client_socket.send(command.encode())
+    
 
       # Jika pengguna memasukkan perintah upload yang didampingi dengan nama file
-      if command.lower().startswith('upload') and len(command.split()) > 1:
+      if command.lower().startswith('upload') and len(split_command) > 1:
           # Menyimpan nama dokumen
-          file_name = command.split()[1]
+          file_name = split_command[1]
           # Menyiapkan path dokumen
           filepath = os.path.join(FILE_DIR, file_name)
           if os.path.isfile(filepath):
@@ -45,24 +48,71 @@ while True:
               continue        
 
       # Jika pengguna memasukkan perintah download yang didampingi dengan nama file
-      elif command.lower().startswith('download') and len(command.split()) > 1:
-          # Menerima respon server
-          file_data = client_socket.recv(BUFFER_SIZE)
-          # Jika respon bukan '-1' atau dokumen tersedia dan siap diunduh
-          if file_data.decode() != '-1':
-            # Menyimpan nama dokumen
-            file_name = command.split()[1]
-            # Menyiapkan path dokumen
-            filepath = os.path.join(FILE_DIR, file_name)
-            # Membuat/menulis dokumen sesuai path
-            with open(filepath, 'wb') as f:
-                # Tulis respon server ke dokumen yang dibuat
-                f.write(file_data)
-      
-      # Menerima respon dari server, lalu menampilkannya
-      response = client_socket.recv(BUFFER_SIZE)
-      print(response.decode())
+      elif command.lower().startswith('download') and len(split_command) > 1:
+          # Untuk menyimpan nama dokumen dan path dokumen
+          file_name = ""
+          filepath = ""
+          
+          # Jika ada argumen kedua
+          if len(split_command) > 2:
+              # Menyimpan argumen kedua
+              second_arg = split_command[2]
+              # Mendapatkan format dokumen
+              origin_format = split_command[1].split('.')[-1]
+              new_format = split_command[2].split('.')[-1]
+              # Jika argumen kedua tidak mengandung slash dan backslah dan mengandung titik, langsung ambil sebagai nama dokumen
+              if second_arg.find('\\') == -1 and second_arg.find('/') == -1 and second_arg.find('.') != -1:
+                  # Menyimpan nama dokumen
+                  file_name = second_arg
+                  # Menyiapkan path dokumen
+                  if origin_format == new_format:
+                    filepath = os.path.join(FILE_DIR, file_name)
+                  else:
+                    print("Argumen tidak valid. Tidak dapat menggunggah dokumen manjadi format lain.")
+                    continue
+              # Jika argumen kedua mengandung slash atau tidak mengandung titik
+              elif second_arg.find('/') > -1 or second_arg.find('.') == -1:
+                  print("Argumen tidak valid. Perhatikan penulisan path!")
+                  continue
+              else:
+                  # Mendapatkan nama file    
+                  split_second_arg = second_arg.split("\\")
+                  file_name = split_second_arg[len(split_second_arg)-1]   
+                  # Menyiapkan path dokumen
+                  filepath = os.path.join(FILE_DIR, second_arg)
+          else:       
+              file_name = split_command[1]
+              # Menyiapkan path dokumen
+              filepath = os.path.join(FILE_DIR, file_name)
 
+          # Jika client mengunduh dokumen untuk disimpan di direktori tertentu
+          if len(split_command) > 1:
+              # Jika file ditemukan dalam direktori
+              if os.path.isfile(filepath):
+                  print(f"Dokumen dengan nama ({file_name}) sudah ada di direktori client.")  
+                  continue
+              else:              
+                  file_data = client_socket.recv(BUFFER_SIZE) 
+                  # Jika respon bukan '-1' atau dokumen tersedia dan siap diunduh
+                  if file_data.decode() != '-1':
+                    try:
+                      # Membuat/menulis dokumen sesuai path
+                      with open(filepath, 'wb') as f:
+                          # Tulis respon server ke dokumen yang dibuat
+                          f.write(file_data)
+                      # Beri feedback
+                      size = os.path.getsize(filepath) / (1024 * 1024)
+                      print(f"Dokumen '{file_name}' ({size:.2f} MB) berhasil diunduh di direktori '{filepath}' client.")
+                    except:
+                      # Jika file tidak dapat dibuat karena direktori tidak ada atau kesalahan lain
+                      print("Argumen tidak valid. Gagal mengunduh dokumen.")
+                      continue
+
+      # Menerima respon dari server, lalu menampilkannya
+      if command.lower().startswith('download') == False:
+        response = client_socket.recv(BUFFER_SIZE)
+        print(response.decode())
+        
       # Mengurus perintah byebye
       if command.lower() == 'byebye':
           client_socket.close()

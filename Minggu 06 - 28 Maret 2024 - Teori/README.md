@@ -102,8 +102,8 @@ Masih di dalam perulangan while, disiapkan pengondisian untuk beberapa perintah 
 |----|----|
 | ls | Ketika client menginputkan command tersebut, maka server akan memberikan daftar file dan folder. |
 | rm {nama file} | Ketika client menginputkan command tersebut, maka server akan menghapus file dengan acuan nama file yang diberikan pada parameter pertama. |
-| download {nama file} | Ketika client menginputkan command tersebut, maka server akan memberikan file dengan acuan nama file yang diberikan pada parameter pertama. |
-| upload {nama file} | Ketika client menginputkan command tersebut, maka server akan menerima dan menyimpan file dengan acuan nama file yang diberikan pada parameter pertama. |
+| download {nama file} {direktori tujuan\nama file baru} | Ketika client menginputkan command tersebut, maka server akan memberikan file dengan acuan nama file yang diberikan pada parameter pertama. |
+| upload {nama file} {direktori tujuan\nama file baru} | Ketika client menginputkan command tersebut, maka server akan menerima dan menyimpan file dengan acuan nama file yang diberikan pada parameter pertama. |
 | size {nama file} | Ketika client menginputkan command tersebut, maka server akan memberikan informasi file dalam satuan MB (Mega bytes) dengan acuan nama file yang diberikan pada parameter pertama. |
 | byebye | Ketika client menginputkan command tersebut, maka hubungan socket client akan diputus. |
 | connme | Ketika client menginputkan command tersebut, maka hubungan socket client akan terhubung. |
@@ -157,8 +157,26 @@ Terdapat 7 perintah yang disediakan. Pertama adalah perintah ls atau list. Perin
 ```python
 # Mengurus perintah ls atau list
 if action == 'ls':
-    # Mendapatkan daftar dokumen dalam direktori
-    files = os.listdir(FILE_DIR)
+    # Untuk menyimpan nama direktori dan path dokumen
+    files = ""
+    filepath = ""
+    if len(split_command) == 1:
+        # Mendapatkan daftar dokumen dalam direktori
+        files = os.listdir(FILE_DIR)
+    else:
+        try:
+            # Mendapatkan file path
+            filepath = os.path.join(FILE_DIR, split_command[1])
+            if os.path.isdir(filepath):
+                # Mendapatkan daftar dokumen dalam direktori
+                files = os.listdir(filepath)
+            else:
+                client_socket.send(f"Direktori '{filepath}' tidak ditemukan.".encode())
+                continue
+        except:
+            client_socket.send(f"Direktori '{filepath}' tidak ditemukan.".encode())
+            continue
+    
     # Jika direktori tidak kosong
     if len(files) > 0:
         # Menformat daftar dokumen menjadi daftar yang dipisahkan baris baru (String)
@@ -166,7 +184,7 @@ if action == 'ls':
         # Mengirimkan daftar dokumen yang sudah disiapkan
         client_socket.sendall(files_list.encode())
     else:
-        client_socket.sendall(f"Direktori '{FILE_DIR}' kosong.".encode())
+        client_socket.send(f"Direktori '{FILE_DIR}' kosong.".encode())
 ```
 
 > **CATATAN:** F-string, di mana f sebelum tanda kutip menunjukkan bahwa ini adalah formatted string literal. Fitur yang membuat penulisan dan pembacaan kode yang memerlukan interpolasi string menjadi lebih mudah dan lebih intuitif. {FILE_DIR} adalah placeholder di mana nilai dari variabel FILE_DIR akan dimasukkan ke dalam string.
@@ -192,7 +210,7 @@ elif action == 'rm' and len(split_command) > 1:
 ```
 
 <p style="text-align:justify;">
-Perintah ketiga adalah perintah upload. Perintah ini berguna untuk mengunggah dokumen yang ada di direktori client ke dalam direktori server. Berikut adalah blok kode untuk perintah (kondisi) tersebut:
+Perintah ketiga adalah perintah upload. Perintah ini berguna untuk mengunggah dokumen yang ada di direktori client ke dalam direktori server. Dalam proses penggunggan, client dapat memilih folder/direktori tujuan unggahan serta mengganti nama dokumen unggahan sebagai cara untuk menghindari kesamaan nama. Berikut adalah blok kode untuk perintah (kondisi) tersebut:
 </p>
 
 ```python
@@ -200,22 +218,66 @@ Perintah ketiga adalah perintah upload. Perintah ini berguna untuk mengunggah do
 elif action == 'upload' and len(split_command) > 1:
     # Menerima data dari client
     file_data = client_socket.recv(BUFFER_SIZE)
-    # Jika data yang diterima bukan '-1' atau atau dokumen tersedia dan siap diupload
+    # Untuk menyimpan nama dokumen dan path dokumen
+    file_name = ""
+    filepath = ""
+    # Jika data yang diterima bukan '-1' atau dokumen tersedia dan siap diupload
     if file_data.decode() != '-1':
-        # Menyimpan nama dokumen
-        file_name = split_command[1]
-        # Menyiapkan path dokumen
-        filepath = os.path.join(FILE_DIR, file_name)
-        # Membuat/menulis dokumen sesuai path
-        with open(filepath, 'wb') as f:
-            # Menerima data file yang "diupload" client, lalu menuliskannya ke dokumen yang dibuat
-            f.write(file_data)
-        # Memberi tahu client
-        client_socket.send(f"Dokumen '{file_name}' berhasil diunggah".encode())                
+        # Jika ada argumen kedua
+        if len(split_command) > 2:
+            # Menyimpan argumen kedua
+            second_arg = split_command[2]
+            # Mendapatkan format dokumen
+            origin_format = split_command[1].split('.')[-1]
+            new_format = split_command[2].split('.')[-1]
+            # Jika argumen kedua tidak mengandung slash dan backslah dan mengandung titik, langsung ambil sebagai nama dokumen
+            if second_arg.find('\\') == -1 and second_arg.find('/') == -1 and second_arg.find('.') != -1:
+                # Menyimpan nama dokumen
+                file_name = second_arg
+                # Menyiapkan path dokumen
+                if origin_format == new_format:
+                    filepath = os.path.join(FILE_DIR, file_name)
+                else:
+                    client_socket.send(f"Argumen tidak valid. Tidak dapat menggunggah dokumen manjadi format lain.".encode())   
+                    continue
+            # Jika argumen kedua mengandung slash atau tidak mengandung titik
+            elif second_arg.find('/') > -1 or second_arg.find('.') == -1:
+                client_socket.send(f"Argumen tidak valid. Perhatikan penulisan path!".encode())
+                continue
+            else:
+                # Mendapatkan nama file    
+                split_second_arg = second_arg.split("\\")
+                file_name = split_second_arg[len(split_second_arg)-1]   
+                # Menyiapkan path dokumen
+                filepath = os.path.join(FILE_DIR, second_arg)
+        else:       
+            file_name = split_command[1]
+            # Menyiapkan path dokumen
+            filepath = os.path.join(FILE_DIR, file_name)
+            
+
+        # Jika client mengunggah dokumen untuk disimpan di direktori tertentu
+        if len(split_command) > 1:
+            # Jika file ditemukan dalam direktori
+            if os.path.isfile(filepath):
+                client_socket.send(f"Dokumen dengan nama ({file_name}) sudah ada di direktori server.".encode())  
+            else:
+                try:
+                    # Membuat/menulis dokumen sesuai path
+                    with open(filepath, 'wb') as f:
+                        # Menerima data file yang "diupload" client, lalu menuliskannya ke dokumen yang dibuat
+                        f.write(file_data)
+                    # Memberi feedback client
+                    size = os.path.getsize(filepath) / (1024 * 1024)
+                    client_socket.send(f"Dokumen '{file_name}' ({size:.2f} MB) berhasil diunggah di direktori '{filepath}' server.".encode())                
+                except:
+                    # Jika file tidak dapat dibuat karena direktori tidak ada atau kesalahan lain
+                    client_socket.send(f"Argumen tidak valid. Gagal mengunggah dokumen.".encode())   
+                    continue             
 ```
 
 <p style="text-align:justify;">
-Perintah keempat adalah perintah download. Perintah ini berguna untuk mengunduh dokumen yang ada di direktori server ke dalam direktori client. Berikut adalah blok kode untuk perintah (kondisi) tersebut:
+Perintah keempat adalah perintah download. Perintah ini berguna untuk mengunduh dokumen yang ada di direktori server ke dalam direktori client. Dalam proses pengunduhan, client dapat memilih folder/direktori tujuan unduhan serta mengganti nama dokumen unduhan sebagai cara untuk menghindari kesamaan nama. Berikut adalah blok kode untuk perintah (kondisi) tersebut:
 </p>
 
 ```python
@@ -230,12 +292,9 @@ elif action == 'download' and len(split_command) > 1:
         # maka baca data dokumen tersebut dan kirim datanya ke client
         with open(filepath, 'rb') as f:
             client_socket.sendall(f.read())
-        client_socket.send(f"Dokumen '{file_name}' berhasil diunduh".encode())
     else:
         # Awali dengan mengirim kode peringatan bahwa dokumen tidak ditemukan
-        client_socket.send('-1'.encode())
-        # Lalu beri pesan peringatannya
-        client_socket.send(f"Dokumen '{file_name}' tidak ditemukan".encode())   
+        client_socket.send('-1'.encode()) 
 ```
 
 <p style="text-align:justify;">
@@ -283,7 +342,7 @@ elif action == 'connme':
 > **CATATAN:** String literal biner,  ditandai dengan awalan b sebelum tanda kutip. String ini diubah menjadi bytes, yang merupakan format yang diperlukan oleh metode .send() untuk mengirim data melalui jaringan. Ini dapat menjadi alternatif dalam konteks mengubah sebuah nilai menjadi byte selain metode .encode().
 
 <p style="text-align:justify;">
-Dengan demikian, program server sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2006%20-%2028%20Maret%202024%20-%20Teori/server.py" target="_blank">server.py</a> yang tersedia dalam repositori ini.
+Dengan demikian, program server sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="#" target="_blank">server.py</a> yang tersedia dalam repositori ini.
 </p>
 
 <br>
@@ -401,48 +460,95 @@ if conn:
     client_socket.send(command.encode())
 
     # Jika pengguna memasukkan perintah upload yang didampingi dengan nama file
-    if command.lower().startswith('upload') and len(command.split()) > 1:
-        # Menyimpan nama dokumen
-        file_name = command.split()[1]
-        # Menyiapkan path dokumen
-        filepath = os.path.join(FILE_DIR, file_name)
-        if os.path.isfile(filepath):
-            with open(filepath, 'rb') as f:
-                client_socket.sendall(f.read())
-        else:
-            # Kirim kode peringatan bahwa dokume tidak tersedia untuk diupload
-            client_socket.send('-1'.encode())
-            print(f"Dokumen '{filepath}' tidak ditemukan")  
-            continue        
+      if command.lower().startswith('upload') and len(split_command) > 1:
+          # Menyimpan nama dokumen
+          file_name = split_command[1]
+          # Menyiapkan path dokumen
+          filepath = os.path.join(FILE_DIR, file_name)
+          if os.path.isfile(filepath):
+              with open(filepath, 'rb') as f:
+                  client_socket.sendall(f.read())
+          else:
+              # Kirim kode peringatan bahwa dokume tidak tersedia untuk diupload
+              client_socket.send('-1'.encode())
+              print(f"Dokumen '{filepath}' tidak ditemukan")  
+              continue            
 
     # Jika pengguna memasukkan perintah download yang didampingi dengan nama file
-    elif command.lower().startswith('download') and len(command.split()) > 1:
-        # Menerima respon server
-        file_data = client_socket.recv(BUFFER_SIZE)
-        # Jika respon bukan '-1' atau dokumen tersedia dan siap diunduh
-        if file_data.decode() != '-1':
-        # Menyimpan nama dokumen
-        file_name = command.split()[1]
-        # Menyiapkan path dokumen
-        filepath = os.path.join(FILE_DIR, file_name)
-        # Membuat/menulis dokumen sesuai path
-        with open(filepath, 'wb') as f:
-            # Tulis respon server ke dokumen yang dibuat
-            f.write(file_data)
-    
-    # Menerima respon dari server, lalu menampilkannya
-    response = client_socket.recv(BUFFER_SIZE)
-    print(response.decode())
+      elif command.lower().startswith('download') and len(split_command) > 1:
+          # Untuk menyimpan nama dokumen dan path dokumen
+          file_name = ""
+          filepath = ""
+          
+          # Jika ada argumen kedua
+          if len(split_command) > 2:
+              # Menyimpan argumen kedua
+              second_arg = split_command[2]
+              # Mendapatkan format dokumen
+              origin_format = split_command[1].split('.')[-1]
+              new_format = split_command[2].split('.')[-1]
+              # Jika argumen kedua tidak mengandung slash dan backslah dan mengandung titik, langsung ambil sebagai nama dokumen
+              if second_arg.find('\\') == -1 and second_arg.find('/') == -1 and second_arg.find('.') != -1:
+                  # Menyimpan nama dokumen
+                  file_name = second_arg
+                  # Menyiapkan path dokumen
+                  if origin_format == new_format:
+                    filepath = os.path.join(FILE_DIR, file_name)
+                  else:
+                    print("Argumen tidak valid. Tidak dapat menggunggah dokumen manjadi format lain.")
+                    continue
+              # Jika argumen kedua mengandung slash atau tidak mengandung titik
+              elif second_arg.find('/') > -1 or second_arg.find('.') == -1:
+                  print("Argumen tidak valid. Perhatikan penulisan path!")
+                  continue
+              else:
+                  # Mendapatkan nama file    
+                  split_second_arg = second_arg.split("\\")
+                  file_name = split_second_arg[len(split_second_arg)-1]   
+                  # Menyiapkan path dokumen
+                  filepath = os.path.join(FILE_DIR, second_arg)
+          else:       
+              file_name = split_command[1]
+              # Menyiapkan path dokumen
+              filepath = os.path.join(FILE_DIR, file_name)
 
-    # Mengurus perintah byebye
-    if command.lower() == 'byebye':
-        client_socket.close()
-        conn = False
-        print("Koneksi dengan server diakhiri")
+          # Jika client mengunduh dokumen untuk disimpan di direktori tertentu
+          if len(split_command) > 1:
+              # Jika file ditemukan dalam direktori
+              if os.path.isfile(filepath):
+                  print(f"Dokumen dengan nama ({file_name}) sudah ada di direktori client.")  
+                  continue
+              else:              
+                  file_data = client_socket.recv(BUFFER_SIZE) 
+                  # Jika respon bukan '-1' atau dokumen tersedia dan siap diunduh
+                  if file_data.decode() != '-1':
+                    try:
+                      # Membuat/menulis dokumen sesuai path
+                      with open(filepath, 'wb') as f:
+                          # Tulis respon server ke dokumen yang dibuat
+                          f.write(file_data)
+                      # Beri feedback
+                      size = os.path.getsize(filepath) / (1024 * 1024)
+                      print(f"Dokumen '{file_name}' ({size:.2f} MB) berhasil diunduh di direktori '{filepath}' client.")
+                    except:
+                      # Jika file tidak dapat dibuat karena direktori tidak ada atau kesalahan lain
+                      print("Argumen tidak valid. Gagal mengunduh dokumen.")
+                      continue
+
+      # Menerima respon dari server, lalu menampilkannya
+      if command.lower().startswith('download') == False:
+        response = client_socket.recv(BUFFER_SIZE)
+        print(response.decode())
+        
+      # Mengurus perintah byebye
+      if command.lower() == 'byebye':
+          client_socket.close()
+          conn = False
+          print("Koneksi dengan server diakhiri")
 ```
 
 <p style="text-align:justify;">
-Dengan demikian, program client sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="https://github.com/pandragama/pemrograman-jaringan/blob/main/Minggu%2006%20-%2028%20Maret%202024%20-%20Teori/client.py" target="_blank">client.py</a> yang tersedia dalam repositori ini.
+Dengan demikian, program client sudah siap. Keseluruhan kode dapat dilihat di dalam dokumen <a href="#" target="_blank">client.py</a> yang tersedia dalam repositori ini.
 </p>
 
 <br>
@@ -456,6 +562,12 @@ Dengan demikian, program client sudah siap. Keseluruhan kode dapat dilihat di da
 Berdasarkan preview output di atas, diketahui bahwa server mampu menerima koneksi dan perintah dari client. Merespon perintah dengan tindakan yang sesuai.
 </p>
 
+![update_upload](update_upload.png)
+
+<p style="text-align:justify;">
+Pemrosesan perintah <em>upload</em> banyak dilakukan di sisi server. Upload yang mungkin dilakukan adalah menggunggah dokumen dari client ke direktori/folder manapun di dalam server. Selain itu, karena nama dokumen tidak bisa sama, maka client bisa mendapatkan peringatan apabila nama dokumen sudah dipakai dalam direktori server. Hal ini bisa di atasi dengan menggunakan nama lain sebagai nama dokumen unggahan, contohnya seperti pada gambar di atas.
+</p>
+
 <br>
 
 **client.py**
@@ -465,16 +577,18 @@ Berdasarkan preview output di atas, diketahui bahwa server mampu menerima koneks
 Berdasarkan preview output di atas, diketahui bahwa client mampu terhubung dengan server, mengirimkan data atau perintah (custom) FTP, mendapat respon yang sesuai, memutus hubungan dengan server, dan terhubung kembali dengan server. Mengingatkan kembali, berikut adalah daftar perintah yang bisa digunakan client untuk berinteraksi dengan server:
 </p>
 
+![update_download](update_download.png)
+
+<p style="text-align:justify;">
+Pemrosesan perintah <em>download</em> banyak dilakukan di sisi client. Download yang mungkin dilakukan adalah mengunduh dokumen dari server ke direktori/folder manapun di dalam client. Selain itu, karena nama dokumen tidak bisa sama, maka client bisa mendapatkan peringatan apabila nama dokumen sudah dipakai dalam direktori client. Hal ini bisa di atasi dengan menggunakan nama lain sebagai nama dokumen download, contohnya seperti pada gambar di atas.
+</p>
+
 | Perintah | Keterangan |
 |----|----|
 | ls | Ketika client menginputkan command tersebut, maka server akan memberikan daftar file dan folder. |
 | rm {nama file} | Ketika client menginputkan command tersebut, maka server akan menghapus file dengan acuan nama file yang diberikan pada parameter pertama. |
-| download {nama file} | Ketika client menginputkan command tersebut, maka server akan memberikan file dengan acuan nama file yang diberikan pada parameter pertama. |
-| upload {nama file} | Ketika client menginputkan command tersebut, maka server akan menerima dan menyimpan file dengan acuan nama file yang diberikan pada parameter pertama. |
+| download {nama file} {direktori tujuan\nama file baru} | Ketika client menginputkan command tersebut, maka server akan memberikan file dengan acuan nama file yang diberikan pada parameter pertama. |
+| upload {nama file} {direktori tujuan\nama file baru} | Ketika client menginputkan command tersebut, maka server akan menerima dan menyimpan file dengan acuan nama file yang diberikan pada parameter pertama. |
 | size {nama file} | Ketika client menginputkan command tersebut, maka server akan memberikan informasi file dalam satuan MB (Mega bytes) dengan acuan nama file yang diberikan pada parameter pertama. |
 | byebye | Ketika client menginputkan command tersebut, maka hubungan socket client akan diputus. |
 | connme | Ketika client menginputkan command tersebut, maka hubungan socket client akan terhubung. |
-
-<br>
-
-> Pandu Rafa Panatagama - 1203220063 - IF0201
